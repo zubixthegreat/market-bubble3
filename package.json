@@ -1,0 +1,30 @@
+'use client';
+import { MOCK_MARKETS } from '@/data/mockData';
+
+export default function TickerStrip() {
+  const items = [...MOCK_MARKETS, ...MOCK_MARKETS];
+
+  return (
+    <div className="h-8 border-b border-bubble-border overflow-hidden bg-bubble-surface flex items-center">
+      <div className="flex-shrink-0 px-3 border-r border-bubble-border h-full flex items-center">
+        <span className="text-[10px] font-mono font-bold text-bubble-accent tracking-wider">LIVE</span>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <div className="ticker-strip flex items-center gap-6 whitespace-nowrap w-max">
+          {items.map((asset, i) => (
+            <span key={i} className="flex items-center gap-1.5 text-[11px] font-mono">
+              <span className="text-bubble-muted">{asset.symbol}</span>
+              <span className="text-bubble-text font-semibold">
+                {asset.price > 100 ? `$${asset.price.toLocaleString()}` : `$${asset.price.toFixed(3)}`}
+              </span>
+              <span className={asset.changePct24h >= 0 ? 'text-bubble-green' : 'text-bubble-red'}>
+                {asset.changePct24h >= 0 ? '▲' : '▼'} {Math.abs(asset.changePct24h).toFixed(2)}%
+              </span>
+              <span className="text-bubble-dim">|</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

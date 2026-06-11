@@ -1,0 +1,22 @@
+import type { Metadata } from 'next'
+import './globals.css'
+
+export const metadata: Metadata = {
+  title: 'Market Bubble — Unified Live Dashboard',
+  description: 'Premium crypto media terminal. Live streams, unified chat, AI summaries, and real-time market data.',
+  keywords: 'crypto, bitcoin, solana, live streams, market analysis, trading',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" className="dark">
+      <body className="bg-bubble-bg text-bubble-text font-sans antialiased">
+        {children}
+      </body>
+    </html>
+  )
+}

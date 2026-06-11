@@ -1,0 +1,311 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Volume2, Maximize, Settings, Share2, Radio, Users } from 'lucide-react';
+
+// Market Bubble streams simultaneously to all three platforms.
+// This player reflects that: one stream, three simultaneous audiences.
+
+const PLATFORM_AUDIENCES = [
+  { id: 'twitch', label: 'Twitch', color: '#9146FF', bg: 'rgba(145,70,255,0.12)', border: 'rgba(145,70,255,0.3)', icon: '📡', viewers: 48293 },
+  { id: 'kick',   label: 'Kick',   color: '#53FC18', bg: 'rgba(83,252,24,0.10)',  border: 'rgba(83,252,24,0.25)',  icon: '⚡', viewers: 12441 },
+  { id: 'x',      label: 'X',      color: '#E8EDF5', bg: 'rgba(232,237,245,0.07)', border: 'rgba(232,237,245,0.15)', icon: '𝕏', viewers: 8870 },
+];
+
+const TOTAL_VIEWERS = PLATFORM_AUDIENCES.reduce((s, p) => s + p.viewers, 0);
+
+// Waveform bars that animate as audio
+function Waveform() {
+  return (
+    <div className="flex items-center justify-center gap-0.5">
+      {Array.from({ length: 36 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="w-[3px] rounded-full bg-white/20"
+          animate={{ height: [3, Math.random() * 32 + 4, 3] }}
+          transition={{
+            duration: 0.5 + Math.random() * 0.9,
+            repeat: Infinity,
+            delay: i * 0.03,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Audience counter with live shimmer
+function AudienceCounter({
+  platform,
+  index,
+}: {
+  platform: typeof PLATFORM_AUDIENCES[0];
+  index: number;
+}) {
+  const [count, setCount] = useState(platform.viewers);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCount((c) => c + Math.floor((Math.random() - 0.3) * 12));
+    }, 2800 + index * 400);
+    return () => clearInterval(interval);
+  }, [index]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="flex items-center gap-2 rounded-lg px-3 py-2"
+      style={{ background: platform.bg, border: `1px solid ${platform.border}` }}
+    >
+      <span className="text-sm leading-none">{platform.icon}</span>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: platform.color }}>
+          {platform.label}
+        </span>
+        <motion.span
+          key={count}
+          initial={{ opacity: 0.6 }}
+          animate={{ opacity: 1 }}
+          className="text-xs font-mono font-bold text-bubble-text leading-none"
+        >
+          {count.toLocaleString()}
+        </motion.span>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function StreamPlayer() {
+  const [totalViewers, setTotalViewers] = useState(TOTAL_VIEWERS);
+  const [volume, setVolume] = useState(82);
+  const [showVolume, setShowVolume] = useState(false);
+
+  // Slowly drift total viewer count
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTotalViewers((c) => c + Math.floor((Math.random() - 0.35) * 40));
+    }, 3200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* ── Stream viewport ── */}
+      <div className="relative flex-1 bg-black overflow-hidden min-h-0">
+
+        {/* Ambient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0e1a] via-[#080b14] to-[#060810]" />
+
+        {/* Subtle grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(0,212,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,1) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+
+        {/* Main content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
+          {/* Stream title area */}
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center px-8 max-w-2xl"
+          >
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <motion.div
+                animate={{ opacity: [1, 0.4, 1] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+                className="flex items-center gap-1.5 bg-red-500/15 border border-red-500/30 rounded-full px-3 py-1"
+              >
+                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]" />
+                <span className="text-[11px] font-bold text-red-400 tracking-widest">LIVE</span>
+              </motion.div>
+              <div className="flex items-center gap-1 bg-white/5 border border-white/8 rounded-full px-3 py-1">
+                <Users size={10} className="text-bubble-muted" />
+                <motion.span
+                  key={totalViewers}
+                  initial={{ opacity: 0.6 }}
+                  animate={{ opacity: 1 }}
+                  className="text-[11px] font-mono text-bubble-muted"
+                >
+                  {totalViewers.toLocaleString()} total viewers
+                </motion.span>
+              </div>
+            </div>
+
+            <h1 className="font-display font-bold text-xl text-white/90 leading-tight mb-2">
+              LIVE: Bitcoin ATH Discussion + Solana Metas Breaking
+            </h1>
+            <p className="text-sm text-white/40">
+              Market Bubble · Crypto Markets
+            </p>
+          </motion.div>
+
+          {/* Waveform */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Waveform />
+          </motion.div>
+
+          {/* Simultaneous platform audiences */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-3"
+          >
+            <div className="flex items-center gap-1.5 mr-1">
+              <Radio size={11} className="text-bubble-muted" />
+              <span className="text-[10px] text-bubble-muted font-mono uppercase tracking-wider">Streaming on</span>
+            </div>
+            {PLATFORM_AUDIENCES.map((p, i) => (
+              <AudienceCounter key={p.id} platform={p} index={i} />
+            ))}
+          </motion.div>
+
+          {/* Guest chips */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex items-center gap-2"
+          >
+            <span className="text-[10px] text-bubble-dim font-mono">On air:</span>
+            {['Alex Mercer', 'Sarah Chen', 'Marcus Webb', 'Dani Torres'].map((name, i) => (
+              <div
+                key={name}
+                className="flex items-center gap-1.5 glass-panel rounded-full px-2.5 py-1"
+              >
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                  style={{
+                    background: `hsl(${i * 72 + 190}, 60%, 20%)`,
+                    color: `hsl(${i * 72 + 190}, 80%, 70%)`,
+                  }}
+                >
+                  {name[0]}
+                </div>
+                <span className="text-[11px] text-bubble-muted">{name.split(' ')[0]}</span>
+                <motion.span
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.4 }}
+                  className="w-1.5 h-1.5 rounded-full bg-bubble-green"
+                />
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Duration badge */}
+        <div className="absolute top-3 right-3">
+          <div className="glass-panel rounded-lg px-2.5 py-1 text-xs font-mono text-bubble-muted">
+            2:14:33
+          </div>
+        </div>
+
+        {/* Volume popup */}
+        <AnimatePresence>
+          {showVolume && (
+            <motion.div
+              initial={{ opacity: 0, y: 4, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-14 left-10 glass-panel rounded-xl p-3 flex items-center gap-3 shadow-glass min-w-[160px]"
+            >
+              <Volume2 size={13} className="text-bubble-muted flex-shrink-0" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="flex-1 h-1.5 appearance-none rounded-full cursor-pointer"
+                style={{ accentColor: '#00D4FF' }}
+              />
+              <span className="text-[10px] font-mono text-bubble-muted w-8 text-right flex-shrink-0">
+                {volume}%
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom controls */}
+        <div className="absolute bottom-0 left-0 right-0 glass-panel border-t border-bubble-border p-2 flex items-center gap-3">
+          <button className="w-8 h-8 rounded-lg bg-bubble-accent flex items-center justify-center hover:bg-bubble-accent/80 transition-colors flex-shrink-0">
+            <Play size={14} className="text-black ml-0.5" fill="black" />
+          </button>
+          <button
+            className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-bubble-muted hover:text-bubble-text transition-colors relative"
+            onClick={() => setShowVolume((v) => !v)}
+          >
+            <Volume2 size={13} />
+          </button>
+          {/* Progress bar */}
+          <div className="flex-1 h-1 bg-bubble-dim rounded-full overflow-hidden cursor-pointer group">
+            <motion.div
+              className="h-full bg-bubble-accent rounded-full"
+              initial={{ width: '0%' }}
+              animate={{ width: '72%' }}
+              transition={{ duration: 1.5, ease: 'easeOut' }}
+            />
+          </div>
+          <span className="text-xs font-mono text-bubble-muted whitespace-nowrap">1:36:20 / 2:14:33</span>
+          <button className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-bubble-muted hover:text-bubble-text transition-colors">
+            <Share2 size={13} />
+          </button>
+          <button className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-bubble-muted hover:text-bubble-text transition-colors">
+            <Settings size={13} />
+          </button>
+          <button className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-bubble-muted hover:text-bubble-text transition-colors">
+            <Maximize size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Stream info bar ── */}
+      <div className="px-4 py-2.5 border-t border-bubble-border bg-bubble-surface flex items-center gap-3 flex-shrink-0">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-semibold text-bubble-text truncate">
+            LIVE: Bitcoin ATH Discussion + Solana Metas Breaking
+          </h2>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-xs text-bubble-muted">Market Bubble</span>
+            <span className="text-bubble-dim">·</span>
+            <span className="text-xs text-bubble-muted">Crypto Markets</span>
+            <span className="text-bubble-dim">·</span>
+            {/* Show all three destination platforms */}
+            <div className="flex items-center gap-1">
+              {PLATFORM_AUDIENCES.map((p) => (
+                <span
+                  key={p.id}
+                  className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
+                  style={{ color: p.color, background: p.bg, border: `1px solid ${p.border}` }}
+                >
+                  {p.icon} {p.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button className="px-3 py-1.5 rounded-lg bg-bubble-accent/15 border border-bubble-accent/30 text-xs text-bubble-accent font-medium hover:bg-bubble-accent/20 transition-colors">
+            Follow
+          </button>
+          <button className="px-3 py-1.5 rounded-lg bg-bubble-accent text-xs text-black font-semibold hover:bg-bubble-accent/80 transition-colors">
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
